@@ -25,4 +25,5 @@ fi
 
 export NODE_ENV=production
 export HEADPLANE_CONFIG=/etc/headplane/config.yaml
+cd /opt/headplane
 exec node /opt/headplane/build/server/index.js

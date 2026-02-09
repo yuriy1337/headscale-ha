@@ -133,9 +133,11 @@ if [ -f "${API_KEY_FILE}" ]; then
     HEADPLANE_API_KEY=$(cat "${API_KEY_FILE}")
 fi
 
-cat > /data/headscale/headplane.yaml << EOF
+# Write Headplane config to the default location it expects
+mkdir -p /etc/headplane
+cat > /etc/headplane/config.yaml << EOF
 server:
-  host: 0.0.0.0
+  host: "0.0.0.0"
   port: 3000
   cookie_secret: "${COOKIE_SECRET}"
   cookie_secure: false
@@ -150,9 +152,9 @@ integration:
     enabled: true
 EOF
 
-bashio::log.info "Headplane config written to /data/headscale/headplane.yaml"
+bashio::log.info "Headplane config written to /etc/headplane/config.yaml"
 
-# Set HEADPLANE_CONFIG env var for headplane
-printf "/data/headscale/headplane.yaml" > /var/run/s6/container_environment/HEADPLANE_CONFIG
+# Also set env var as backup
+printf "/etc/headplane/config.yaml" > /var/run/s6/container_environment/HEADPLANE_CONFIG
 
 bashio::log.info "Configuration generation complete"

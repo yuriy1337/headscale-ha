@@ -24,15 +24,15 @@ mkdir -p /var/lib/headplane/agent
 DNS_NAMESERVERS=""
 for server in $(bashio::config 'dns_nameservers'); do
     DNS_NAMESERVERS="${DNS_NAMESERVERS}
-  - ${server}"
+      - \"${server}\""
 done
 
 # Generate headscale config
 cat > /data/headscale/config.yaml << EOF
-server_url: ${SERVER_URL}
-listen_addr: 0.0.0.0:${HEADSCALE_PORT}
-metrics_listen_addr: 127.0.0.1:9090
-grpc_listen_addr: 127.0.0.1:50443
+server_url: "${SERVER_URL}"
+listen_addr: "0.0.0.0:${HEADSCALE_PORT}"
+metrics_listen_addr: "127.0.0.1:9090"
+grpc_listen_addr: "127.0.0.1:50443"
 grpc_allow_insecure: false
 
 private_key_path: /data/headscale/private.key
@@ -40,8 +40,8 @@ noise:
   private_key_path: /data/headscale/noise_private.key
 
 prefixes:
-  v4: 100.64.0.0/10
-  v6: fd7a:115c:a1e0::/48
+  v4: "100.64.0.0/10"
+  v6: "fd7a:115c:a1e0::/48"
 
 database:
   type: sqlite
@@ -49,10 +49,10 @@ database:
     path: /data/headscale/db.sqlite
 
 log:
-  level: ${LOG_LEVEL}
+  level: "${LOG_LEVEL}"
 
 dns:
-  base_domain: ${DNS_BASE_DOMAIN}
+  base_domain: "${DNS_BASE_DOMAIN}"
   magic_dns: true
   nameservers:
     global:${DNS_NAMESERVERS}
@@ -65,12 +65,14 @@ derp:
   server:
     enabled: false
   urls:
-    - https://controlplane.tailscale.com/derpmap/default
+    - "https://controlplane.tailscale.com/derpmap/default"
   auto_update_enabled: true
-  update_frequency: 24h
+  update_frequency: "24h"
 EOF
 
 bashio::log.info "Headscale config written to /data/headscale/config.yaml"
+bashio::log.info "Generated config:"
+cat /data/headscale/config.yaml
 
 # Create default ACL policy if it doesn't exist
 if [ ! -f /data/headscale/acl.json ]; then
@@ -140,7 +142,7 @@ server:
   data_path: /var/lib/headplane
 
 headscale:
-  url: http://127.0.0.1:${HEADSCALE_PORT}
+  url: "http://127.0.0.1:${HEADSCALE_PORT}"
   config_path: /data/headscale/config.yaml
 
 integration:

@@ -139,13 +139,16 @@ cat > /etc/headplane/config.yaml << EOF
 server:
   host: "0.0.0.0"
   port: 3000
+  base_url: "http://localhost:3000"
   cookie_secret: "${COOKIE_SECRET}"
   cookie_secure: false
+  cookie_max_age: 86400
   data_path: /var/lib/headplane
 
 headscale:
   url: "http://127.0.0.1:${HEADSCALE_PORT}"
   config_path: /data/headscale/config.yaml
+  config_strict: false
 
 integration:
   proc:

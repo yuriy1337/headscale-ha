@@ -3,10 +3,45 @@ ARG BUILD_FROM=ghcr.io/hassio-addons/base:20.0.1
 # Stage 1: Get headscale binary
 FROM ghcr.io/juanfont/headscale:0.28.0 AS headscale
 
-# Stage 2: Get headplane build artifacts
-FROM ghcr.io/tale/headplane:0.6.1-shell AS headplane
+# Stage 2: Build Headplane Go components
+FROM golang:1.25.1 AS headplane-go
+WORKDIR /run
+ARG TARGETARCH
 
-# Stage 3: Final image
+RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git .
+
+RUN GOOS=linux GOARCH=$TARGETARCH CGO_ENABLED=0 \
+    ./build.sh --wasm --agent --fake-shell --healthcheck \
+        --wasm-output /bin/hp_ssh.wasm \
+        --agent-output /bin/hp_agent \
+        --fake-shell-output /bin/fake-sh \
+        --healthcheck-output /bin/hp_healthcheck
+
+RUN chmod +x /bin/hp_ssh.wasm /bin/hp_agent /bin/fake-sh /bin/hp_healthcheck
+RUN mkdir -p /var/lib/headplane/agent
+
+# Stage 3: Build Headplane JS app with root prefix
+FROM node:22.16-slim AS headplane-js
+WORKDIR /run
+
+RUN corepack enable
+RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git .
+
+# Patch: serve from / instead of /admin
+RUN sed -i 's|basename: "/admin/"|basename: "/"|' react-router.config.ts
+
+COPY --from=headplane-go /bin/hp_ssh.wasm /run/app/hp_ssh.wasm
+COPY --from=headplane-go /bin/wasm_exec.js /run/app/wasm_exec.js
+
+# Set prefix to empty so vite base becomes "/"
+ENV __INTERNAL_PREFIX=""
+RUN ./build.sh --app --app-install-only
+RUN ./build.sh --app --skip-pnpm-prune
+
+# Prune dev dependencies
+RUN pnpm prune --prod
+
+# Stage 4: Final image
 # hadolint ignore=DL3006
 FROM ${BUILD_FROM}
 
@@ -20,11 +55,11 @@ RUN apk add --no-cache \
 COPY --from=headscale /ko-app/headscale /usr/local/bin/headscale
 RUN chmod +x /usr/local/bin/headscale
 
-# Copy headplane application
-COPY --from=headplane /app/build /opt/headplane/build
-COPY --from=headplane /app/drizzle /opt/headplane/drizzle
-COPY --from=headplane /app/node_modules /opt/headplane/node_modules
-COPY --from=headplane /usr/libexec/headplane/agent /usr/libexec/headplane/agent
+# Copy headplane application (built from source with root prefix)
+COPY --from=headplane-js /run/build /opt/headplane/build
+COPY --from=headplane-js /run/drizzle /opt/headplane/drizzle
+COPY --from=headplane-js /run/node_modules /opt/headplane/node_modules
+COPY --from=headplane-go /bin/hp_agent /usr/libexec/headplane/agent
 
 # Create data directories
 RUN mkdir -p /data/headscale /var/lib/headplane/agent

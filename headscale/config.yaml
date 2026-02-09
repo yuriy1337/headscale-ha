@@ -4,7 +4,6 @@ version: dev
 slug: headscale
 description: Self-hosted Tailscale control server with Headplane web UI
 url: https://github.com/yuriy1337/headscale-ha
-image: ghcr.io/yuriy1337/{arch}-headscale
 arch:
   - aarch64
   - amd64

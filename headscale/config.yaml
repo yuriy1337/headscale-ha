@@ -1,6 +1,6 @@
 ---
 name: Headscale
-version: 0.1.4
+version: 0.1.5
 slug: headscale
 description: Self-hosted Tailscale control server with Headplane web UI
 url: https://github.com/yuriy1337/headscale-ha
@@ -11,6 +11,7 @@ arch:
 init: false
 ingress: true
 ingress_port: 3000
+ingress_entry: /admin
 panel_title: Headscale
 panel_icon: mdi:vpn
 ports:

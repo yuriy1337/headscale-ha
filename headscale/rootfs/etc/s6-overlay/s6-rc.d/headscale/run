@@ -1,0 +1,4 @@
+#!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+bashio::log.info "Starting Headscale server..."
+exec /usr/local/bin/headscale serve --config /data/headscale/config.yaml

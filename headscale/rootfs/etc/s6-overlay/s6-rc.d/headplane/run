@@ -1,0 +1,28 @@
+#!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+bashio::log.info "Starting Headplane web UI..."
+
+HEADSCALE_PORT=$(bashio::config 'headscale_port')
+
+# Wait for headscale to be ready
+bashio::log.info "Waiting for Headscale to be ready..."
+for i in $(seq 1 30); do
+    if curl -sf "http://127.0.0.1:${HEADSCALE_PORT}/health" > /dev/null 2>&1; then
+        bashio::log.info "Headscale is ready"
+        break
+    fi
+    if [ "$i" -eq 30 ]; then
+        bashio::log.warning "Headscale did not become ready in time, starting Headplane anyway"
+    fi
+    sleep 1
+done
+
+# Generate API key on first run if needed
+if [ ! -f /data/headscale/api_key ] && [ -f /usr/local/bin/generate-api-key.sh ]; then
+    bashio::log.info "Generating API key for Headplane..."
+    /usr/local/bin/generate-api-key.sh
+fi
+
+export NODE_ENV=production
+export HEADPLANE_CONFIG=/data/headscale/headplane.yaml
+exec node /opt/headplane/build/server/index.js

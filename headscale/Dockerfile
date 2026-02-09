@@ -24,6 +24,7 @@ RUN mkdir -p /var/lib/headplane/agent
 FROM node:22.16-slim AS headplane-js
 WORKDIR /run
 
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git .
 

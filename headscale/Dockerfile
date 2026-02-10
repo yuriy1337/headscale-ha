@@ -24,7 +24,7 @@ RUN mkdir -p /var/lib/headplane/agent
 # Stage 3: Build Headplane JS app with root prefix
 FROM node:22.16-slim AS headplane-js
 
-RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git /src
 WORKDIR /src

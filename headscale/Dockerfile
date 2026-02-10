@@ -11,8 +11,8 @@ ADD https://github.com/tale/headplane/archive/refs/tags/v0.6.1.tar.gz /tmp/headp
 RUN tar xzf /tmp/headplane.tar.gz -C /tmp && mv /tmp/headplane-0.6.1 /src
 WORKDIR /src
 
-RUN GOOS=linux GOARCH=$TARGETARCH CGO_ENABLED=0 \
-    ./build.sh --wasm --agent --fake-shell --healthcheck \
+RUN ls -la /src/ && head -1 /src/build.sh && GOOS=linux GOARCH=$TARGETARCH CGO_ENABLED=0 \
+    sh ./build.sh --wasm --agent --fake-shell --healthcheck \
         --wasm-output /bin/hp_ssh.wasm \
         --agent-output /bin/hp_agent \
         --fake-shell-output /bin/fake-sh \
@@ -39,8 +39,8 @@ COPY --from=headplane-go /bin/wasm_exec.js /src/app/wasm_exec.js
 
 # Set prefix to empty so vite base becomes "/"
 ENV __INTERNAL_PREFIX=""
-RUN ./build.sh --app --app-install-only
-RUN ./build.sh --app --skip-pnpm-prune
+RUN sh ./build.sh --app --app-install-only
+RUN sh ./build.sh --app --skip-pnpm-prune
 
 # Prune dev dependencies
 RUN pnpm prune --prod

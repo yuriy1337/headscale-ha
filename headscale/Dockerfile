@@ -28,9 +28,8 @@ COPY --from=headplane /app/node_modules /opt/headplane/node_modules
 COPY --from=headplane /usr/libexec/headplane/agent /usr/libexec/headplane/agent
 
 # Patch Headplane to serve from / instead of /admin
-# and make asset paths relative for HA ingress compatibility
 RUN find /opt/headplane/build -type f \( -name '*.js' -o -name '*.html' \) -exec \
-    sed -i 's|/admin/|/|g; s|"/admin"|"/"|g; s|href="/assets/|href="assets/|g; s|src="/assets/|src="assets/|g; s|"/assets/|"assets/|g' {} +
+    sed -i 's|/admin/|/|g; s|"/admin"|"/"|g' {} +
 
 # Create data directories
 RUN mkdir -p /data/headscale /var/lib/headplane/agent

@@ -7,9 +7,9 @@ FROM ghcr.io/juanfont/headscale:0.28.0 AS headscale
 FROM golang:1.25.1 AS headplane-go
 ARG TARGETARCH
 
-RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git /src
+ADD https://github.com/tale/headplane/archive/refs/tags/v0.6.1.tar.gz /tmp/headplane.tar.gz
+RUN tar xzf /tmp/headplane.tar.gz -C /tmp && mv /tmp/headplane-0.6.1 /src
 WORKDIR /src
-RUN chmod +x build.sh
 
 RUN GOOS=linux GOARCH=$TARGETARCH CGO_ENABLED=0 \
     ./build.sh --wasm --agent --fake-shell --healthcheck \
@@ -24,11 +24,12 @@ RUN mkdir -p /var/lib/headplane/agent
 # Stage 3: Build Headplane JS app with root prefix
 FROM node:22.16-slim AS headplane-js
 
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
-RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git /src
+
+ADD https://github.com/tale/headplane/archive/refs/tags/v0.6.1.tar.gz /tmp/headplane.tar.gz
+RUN tar xzf /tmp/headplane.tar.gz -C /tmp && mv /tmp/headplane-0.6.1 /src
 WORKDIR /src
-RUN chmod +x build.sh
 
 # Patch: serve from / instead of /admin
 RUN sed -i 's|basename: "/admin/"|basename: "/"|' react-router.config.ts

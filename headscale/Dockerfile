@@ -9,6 +9,7 @@ ARG TARGETARCH
 
 RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git /src
 WORKDIR /src
+RUN chmod +x build.sh
 
 RUN GOOS=linux GOARCH=$TARGETARCH CGO_ENABLED=0 \
     ./build.sh --wasm --agent --fake-shell --healthcheck \
@@ -27,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /
 RUN corepack enable
 RUN git clone --depth 1 --branch v0.6.1 https://github.com/tale/headplane.git /src
 WORKDIR /src
+RUN chmod +x build.sh
 
 # Patch: serve from / instead of /admin
 RUN sed -i 's|basename: "/admin/"|basename: "/"|' react-router.config.ts

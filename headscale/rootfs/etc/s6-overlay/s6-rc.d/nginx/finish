@@ -1,0 +1,2 @@
+#!/usr/bin/execlineb -S1
+# shellcheck shell=bash

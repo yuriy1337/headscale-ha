@@ -13,6 +13,7 @@ FROM ${BUILD_FROM}
 # Install Node.js (required for Headplane)
 RUN apk add --no-cache \
     nodejs \
+    nginx \
     bash \
     curl
 

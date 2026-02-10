@@ -1,0 +1,4 @@
+#!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+bashio::log.info "Starting nginx reverse proxy..."
+exec nginx -g "daemon off;" -c /etc/nginx/nginx.conf

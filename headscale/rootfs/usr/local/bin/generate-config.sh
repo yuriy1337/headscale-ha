@@ -137,9 +137,9 @@ fi
 mkdir -p /etc/headplane
 cat > /etc/headplane/config.yaml << EOF
 server:
-  host: "0.0.0.0"
-  port: 3000
-  base_url: "http://localhost:3000"
+  host: "127.0.0.1"
+  port: 3001
+  base_url: "http://localhost:3001"
   cookie_secret: "${COOKIE_SECRET}"
   cookie_secure: false
   cookie_max_age: 86400

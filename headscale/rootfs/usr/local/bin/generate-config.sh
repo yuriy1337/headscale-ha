@@ -150,12 +150,15 @@ headscale:
   config_path: /data/headscale/config.yaml
   config_strict: false
 
-oidc:
-  headscale_api_key_path: /data/headscale/api_key
-
 integration:
   proc:
     enabled: true
+
+oidc:
+  disable_api_key_login: false
+  issuer: "https://unused.example.com"
+  client_id: "unused"
+  token_endpoint_auth_method: "client_secret_basic"
 EOF
 
 bashio::log.info "Headplane config written to /etc/headplane/config.yaml"

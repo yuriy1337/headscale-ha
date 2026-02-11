@@ -23,6 +23,14 @@ if [ ! -f /data/headscale/api_key ] && [ -f /usr/local/bin/generate-api-key.sh ]
     /usr/local/bin/generate-api-key.sh
 fi
 
+# Show API key in logs so user can find it in the Log tab
+if [ -f /data/headscale/api_key ]; then
+    bashio::log.info "========================================="
+    bashio::log.info "Headplane API Key (paste into the login page):"
+    bashio::log.info "$(cat /data/headscale/api_key)"
+    bashio::log.info "========================================="
+fi
+
 export NODE_ENV=production
 export HEADPLANE_CONFIG=/etc/headplane/config.yaml
 cd /opt/headplane

@@ -150,6 +150,9 @@ headscale:
   config_path: /data/headscale/config.yaml
   config_strict: false
 
+oidc:
+  headscale_api_key_path: /data/headscale/api_key
+
 integration:
   proc:
     enabled: true

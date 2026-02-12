@@ -250,6 +250,14 @@ class TestIngressRewriting:
                 f"src not rewritten: {src}"
             )
 
+    def test_manifest_path_not_rewritten(self):
+        """manifestPath must NOT be prefixed (causes double-prefix in React Router)."""
+        r = ingress_get("/login")
+        # manifestPath should stay as "/__manifest", not get the ingress prefix
+        assert f'"manifestPath":"{INGRESS_PATH}/' not in r.text, (
+            "manifestPath was rewritten with ingress prefix - will cause double-prefix!"
+        )
+
     def test_no_bare_asset_href_src(self):
         """No href/src attributes pointing to /assets/ without the ingress prefix."""
         r = ingress_get("/login")

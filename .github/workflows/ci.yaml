@@ -27,3 +27,29 @@ jobs:
             --amd64 --aarch64 \
             --target headscale \
             --docker-hub ghcr.io/${{ github.repository_owner }}
+
+  integration-test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r tests/requirements.txt
+
+      - name: Build addon image
+        run: |
+          docker build \
+            --build-arg BUILD_FROM=ghcr.io/hassio-addons/base:20.0.1 \
+            --build-arg BUILD_ARCH=amd64 \
+            -t headscale-ha-test:latest \
+            ./headscale
+
+      - name: Run integration tests
+        run: SKIP_BUILD=1 python -m pytest tests/test_integration.py -v --tb=short

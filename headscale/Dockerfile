@@ -10,12 +10,13 @@ FROM ghcr.io/tale/headplane:0.6.2-beta.5-shell AS headplane
 # hadolint ignore=DL3006
 FROM ${BUILD_FROM}
 
-# Install Node.js (required for Headplane)
+# Install runtime dependencies
 RUN apk add --no-cache \
     nodejs \
     nginx \
     bash \
-    curl
+    curl \
+    jq
 
 # Copy headscale binary
 COPY --from=headscale /ko-app/headscale /usr/local/bin/headscale
@@ -30,6 +31,12 @@ COPY --from=headplane /usr/libexec/headplane/agent /usr/libexec/headplane/agent
 # Patch Headplane to serve from / instead of /admin
 RUN find /opt/headplane/build -type f \( -name '*.js' -o -name '*.html' \) -exec \
     sed -i 's|/admin/|/|g; s|"/admin"|"/"|g' {} +
+
+# Make base-addon-log-level work without HA Supervisor (for standalone testing)
+RUN script=$(find /package -path '*/scripts/base-addon-log-level' 2>/dev/null | head -1) && \
+    if [ -n "$script" ]; then \
+      printf '#!/bin/sh\nexit 0\n' > "$script" && chmod +x "$script"; \
+    fi
 
 # Create data directories
 RUN mkdir -p /data/headscale /var/lib/headplane/agent

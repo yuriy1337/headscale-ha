@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/with-contenv bash
 # shellcheck shell=bash
-bashio::log.info "Starting nginx reverse proxy..."
+echo "[INFO] Starting nginx reverse proxy..."
 exec nginx -c /etc/nginx/nginx.conf

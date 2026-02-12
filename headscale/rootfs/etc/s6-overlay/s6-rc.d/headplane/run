@@ -1,25 +1,36 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/with-contenv bash
 # shellcheck shell=bash
-bashio::log.info "Starting Headplane web UI..."
 
-HEADSCALE_PORT=$(bashio::config 'headscale_port')
+_log() { echo "[INFO] $*"; }
+_warn() { echo "[WARNING] $*"; }
+
+# Read headscale port from options
+if [ -n "${SUPERVISOR_TOKEN:-}" ] && command -v bashio::config &>/dev/null; then
+    HEADSCALE_PORT=$(bashio::config 'headscale_port')
+elif [ -f /data/options.json ]; then
+    HEADSCALE_PORT=$(jq -r '.headscale_port' /data/options.json)
+else
+    HEADSCALE_PORT=8080
+fi
+
+_log "Starting Headplane web UI..."
 
 # Wait for headscale to be ready
-bashio::log.info "Waiting for Headscale to be ready..."
+_log "Waiting for Headscale to be ready..."
 for i in $(seq 1 30); do
     if curl -sf "http://127.0.0.1:${HEADSCALE_PORT}/health" > /dev/null 2>&1; then
-        bashio::log.info "Headscale is ready"
+        _log "Headscale is ready"
         break
     fi
     if [ "$i" -eq 30 ]; then
-        bashio::log.warning "Headscale did not become ready in time, starting Headplane anyway"
+        _warn "Headscale did not become ready in time, starting Headplane anyway"
     fi
     sleep 1
 done
 
 # Generate API key on first run if needed
 if [ ! -f /data/headscale/api_key ] && [ -f /usr/local/bin/generate-api-key.sh ]; then
-    bashio::log.info "Generating API key for Headplane..."
+    _log "Generating API key for Headplane..."
     /usr/local/bin/generate-api-key.sh
 fi
 
@@ -30,7 +41,7 @@ if [ -f /data/headscale/api_key ]; then
         -H "Authorization: Bearer ${API_KEY}" \
         "http://127.0.0.1:${HEADSCALE_PORT}/api/v1/apikey" 2>/dev/null)
     if [ "$HTTP_CODE" != "200" ]; then
-        bashio::log.warning "API key is invalid, regenerating..."
+        _warn "API key is invalid, regenerating..."
         rm -f /data/headscale/api_key
         /usr/local/bin/generate-api-key.sh
     fi
@@ -38,10 +49,10 @@ fi
 
 # Show API key in logs so user can find it in the Log tab
 if [ -f /data/headscale/api_key ]; then
-    bashio::log.info "========================================="
-    bashio::log.info "Headplane API Key (paste into the login page):"
-    bashio::log.info "$(cat /data/headscale/api_key)"
-    bashio::log.info "========================================="
+    _log "========================================="
+    _log "Headplane API Key (paste into the login page):"
+    _log "$(cat /data/headscale/api_key)"
+    _log "========================================="
 fi
 
 export NODE_ENV=production

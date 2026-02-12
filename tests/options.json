@@ -1,0 +1,7 @@
+{
+  "server_url": "http://localhost:8080",
+  "headscale_port": 8080,
+  "dns_base_domain": "test.local",
+  "dns_nameservers": ["1.1.1.1"],
+  "log_level": "info"
+}

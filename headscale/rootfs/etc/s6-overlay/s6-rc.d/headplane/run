@@ -23,6 +23,19 @@ if [ ! -f /data/headscale/api_key ] && [ -f /usr/local/bin/generate-api-key.sh ]
     /usr/local/bin/generate-api-key.sh
 fi
 
+# Validate the API key still works (may be stale after addon rebuild)
+if [ -f /data/headscale/api_key ]; then
+    API_KEY=$(cat /data/headscale/api_key)
+    HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+        -H "Authorization: Bearer ${API_KEY}" \
+        "http://127.0.0.1:${HEADSCALE_PORT}/api/v1/apikey" 2>/dev/null)
+    if [ "$HTTP_CODE" != "200" ]; then
+        bashio::log.warning "API key is invalid, regenerating..."
+        rm -f /data/headscale/api_key
+        /usr/local/bin/generate-api-key.sh
+    fi
+fi
+
 # Show API key in logs so user can find it in the Log tab
 if [ -f /data/headscale/api_key ]; then
     bashio::log.info "========================================="

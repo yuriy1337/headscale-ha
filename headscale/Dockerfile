@@ -4,7 +4,7 @@ ARG BUILD_FROM=ghcr.io/hassio-addons/base:20.0.1
 FROM ghcr.io/juanfont/headscale:0.28.0 AS headscale
 
 # Stage 2: Get headplane build artifacts
-FROM ghcr.io/tale/headplane:0.6.1-shell AS headplane
+FROM ghcr.io/tale/headplane:0.6.2-beta.5-shell AS headplane
 
 # Stage 3: Final image
 # hadolint ignore=DL3006

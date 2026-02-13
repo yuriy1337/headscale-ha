@@ -68,7 +68,7 @@ def addon_container():
     # Cleanup any previous run
     docker("rm", "-f", CONTAINER_NAME, check=False)
 
-    # Start container
+    # Start container with INGRESS_ENTRY env var for nginx template
     print("--- Starting addon container ---")
     docker(
         "run",
@@ -79,6 +79,8 @@ def addon_container():
         f"{NGINX_PORT}:{NGINX_PORT}",
         "-p",
         f"{HEADSCALE_PORT}:{HEADSCALE_PORT}",
+        "-e",
+        f"INGRESS_ENTRY={INGRESS_PATH}",
         "-v",
         f"{PROJECT_ROOT}/tests/options.json:/data/options.json:ro",
         IMAGE_NAME,
@@ -250,24 +252,22 @@ class TestIngressRewriting:
                 f"src not rewritten: {src}"
             )
 
-    def test_ingress_path_variable_not_empty(self):
-        """Verify $ingress_path expands to actual value, not empty string.
+    def test_ingress_path_not_empty(self):
+        """Verify ingress path is hardcoded in sub_filter output, not empty.
 
-        Problem 17: $http_x_ingress_path doesn't expand in sub_filter.
-        The fix uses `set $ingress_path $http_x_ingress_path`. If the variable
-        is empty, sub_filter produces 'window.baseUrl="/"' instead of
-        'window.baseUrl="/api/hassio_ingress/TOKEN/"'.
+        Problem 17-18: nginx variables don't expand in sub_filter.
+        The fix uses sed to hardcode the ingress path at startup.
         """
-        r = ingress_get("/login")
+        r = direct_get("/login")
         # window.baseUrl MUST contain the full ingress path, not just "/"
         assert f'window.baseUrl="{INGRESS_PATH}/"' in r.text, (
-            f"$ingress_path expanded to empty string! "
+            f"Ingress path not hardcoded in nginx config! "
             f"Expected baseUrl containing '{INGRESS_PATH}'. "
             f"Got: {re.search(r'window.baseUrl=[^;]+', r.text).group(0) if 'window.baseUrl' in r.text else 'no baseUrl found'}"
         )
         # Double-check: basename must also have the full path
         assert f'"basename":"{INGRESS_PATH}/"' in r.text, (
-            f"$ingress_path expanded to empty string in basename! "
+            f"Ingress path not hardcoded in basename! "
             f"Got: {re.search(r'\"basename\":\"[^\"]*\"', r.text).group(0) if 'basename' in r.text else 'no basename found'}"
         )
 
@@ -370,18 +370,18 @@ class TestDirectAccess:
         r = direct_get("/login")
         assert r.status_code == 200
 
-    def test_direct_access_no_ingress_prefix(self):
-        """Without X-Ingress-Path, URLs should have no prefix."""
+    def test_direct_access_has_hardcoded_ingress(self):
+        """With hardcoded ingress path, direct access also has prefix in response body."""
         r = direct_get("/login")
-        # basename should be "/" (no ingress rewriting)
-        assert '"basename":"/"' in r.text or '"basename": "/"' in r.text
+        # basename is hardcoded to the ingress path (not dynamic per-request)
+        assert f'"basename":"{INGRESS_PATH}/"' in r.text
 
     def test_direct_root_redirect(self):
         r = direct_get("/")
         assert r.status_code == 302
         location = r.headers.get("Location", "")
-        # Without ingress, should redirect to /machines (no prefix)
-        assert location == "/machines", f"Direct root redirect: {location}"
+        # Ingress path is hardcoded, so redirect always includes it
+        assert location == f"{INGRESS_PATH}/machines", f"Direct root redirect: {location}"
 
 
 # ============================================================
@@ -390,14 +390,23 @@ class TestDirectAccess:
 
 
 class TestAssetLoading:
+    @staticmethod
+    def _strip_ingress(path: str) -> str:
+        """Strip the hardcoded ingress prefix from a path (simulates HA Supervisor)."""
+        if path.startswith(INGRESS_PATH):
+            return path[len(INGRESS_PATH):]
+        return path
+
     def test_css_assets_return_200(self):
         """Find CSS asset URLs from the login page and verify they load."""
         r = direct_get("/login")
         css_files = re.findall(r'href="(/[^"]*\.css)"', r.text)
         assert len(css_files) > 0, "No CSS files found in login page"
         for css in css_files:
-            r2 = direct_get(css)
-            assert r2.status_code == 200, f"CSS 404: {css}"
+            # Strip ingress prefix (simulating what HA Supervisor does)
+            bare_path = self._strip_ingress(css)
+            r2 = direct_get(bare_path)
+            assert r2.status_code == 200, f"CSS 404: {css} (requested as {bare_path})"
             assert "text/css" in r2.headers.get("Content-Type", ""), (
                 f"Wrong Content-Type for {css}: {r2.headers.get('Content-Type')}"
             )
@@ -406,20 +415,23 @@ class TestAssetLoading:
         """Find JS asset URLs from the login page and verify they load."""
         r = direct_get("/login")
         # Look for JS in src attributes and also in JSON manifest data
+        # Paths may be prefixed with ingress path (hardcoded at startup)
         js_files = re.findall(r'src="(/[^"]*\.js)"', r.text)
+        js_files += re.findall(r'"(' + re.escape(INGRESS_PATH) + r'/assets/[^"]*\.js)"', r.text)
         js_files += re.findall(r'"(/assets/[^"]*\.js)"', r.text)
         # Deduplicate
         js_files = list(set(js_files))
         assert len(js_files) > 0, "No JS files found in login page"
         for js in js_files:
-            r2 = direct_get(js)
-            assert r2.status_code == 200, f"JS 404: {js}"
+            bare_path = self._strip_ingress(js)
+            r2 = direct_get(bare_path)
+            assert r2.status_code == 200, f"JS 404: {js} (requested as {bare_path})"
 
     def test_ingress_css_assets_return_200(self):
-        """CSS assets referenced via ingress prefix should load when accessed directly."""
-        r = ingress_get("/login")
+        """CSS assets with ingress prefix load when prefix is stripped (like HA does)."""
+        r = direct_get("/login")
         css_files = re.findall(r'href="' + re.escape(INGRESS_PATH) + r'(/[^"]*\.css)"', r.text)
+        assert len(css_files) > 0, "No ingress-prefixed CSS files found"
         for css_path in css_files:
-            # HA would strip the ingress prefix, so we request the bare path
             r2 = direct_get(css_path)
             assert r2.status_code == 200, f"CSS 404 via ingress: {css_path}"

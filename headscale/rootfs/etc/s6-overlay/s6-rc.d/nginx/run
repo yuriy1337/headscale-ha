@@ -1,4 +1,24 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
+
 echo "[INFO] Starting nginx reverse proxy..."
+
+# Get the ingress entry from the HA Supervisor API or env var (for testing)
+INGRESS_ENTRY="${INGRESS_ENTRY:-}"
+if [ -z "${INGRESS_ENTRY}" ] && [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+    INGRESS_ENTRY=$(curl -s -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        http://supervisor/addons/self/info 2>/dev/null \
+        | jq -r '.data.ingress_entry // empty')
+fi
+
+if [ -z "${INGRESS_ENTRY}" ]; then
+    echo "[WARNING] Could not get ingress entry from Supervisor, using empty prefix"
+fi
+
+echo "[INFO] Ingress entry: ${INGRESS_ENTRY}"
+
+# Replace placeholder in nginx config with actual ingress path
+# Use a delimiter that won't appear in the ingress path (| instead of /)
+sed -i "s|%%INGRESS_ENTRY%%|${INGRESS_ENTRY}|g" /etc/nginx/nginx.conf
+
 exec nginx -c /etc/nginx/nginx.conf

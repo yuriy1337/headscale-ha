@@ -250,6 +250,27 @@ class TestIngressRewriting:
                 f"src not rewritten: {src}"
             )
 
+    def test_ingress_path_variable_not_empty(self):
+        """Verify $ingress_path expands to actual value, not empty string.
+
+        Problem 17: $http_x_ingress_path doesn't expand in sub_filter.
+        The fix uses `set $ingress_path $http_x_ingress_path`. If the variable
+        is empty, sub_filter produces 'window.baseUrl="/"' instead of
+        'window.baseUrl="/api/hassio_ingress/TOKEN/"'.
+        """
+        r = ingress_get("/login")
+        # window.baseUrl MUST contain the full ingress path, not just "/"
+        assert f'window.baseUrl="{INGRESS_PATH}/"' in r.text, (
+            f"$ingress_path expanded to empty string! "
+            f"Expected baseUrl containing '{INGRESS_PATH}'. "
+            f"Got: {re.search(r'window.baseUrl=[^;]+', r.text).group(0) if 'window.baseUrl' in r.text else 'no baseUrl found'}"
+        )
+        # Double-check: basename must also have the full path
+        assert f'"basename":"{INGRESS_PATH}/"' in r.text, (
+            f"$ingress_path expanded to empty string in basename! "
+            f"Got: {re.search(r'\"basename\":\"[^\"]*\"', r.text).group(0) if 'basename' in r.text else 'no basename found'}"
+        )
+
     def test_manifest_path_not_rewritten(self):
         """manifestPath must NOT be prefixed (causes double-prefix in React Router)."""
         r = ingress_get("/login")

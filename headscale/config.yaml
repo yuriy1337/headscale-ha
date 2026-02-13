@@ -1,6 +1,6 @@
 ---
 name: Headscale
-version: 0.1.18
+version: 0.1.19
 slug: headscale
 description: Self-hosted Tailscale control server with Headplane web UI
 url: https://github.com/yuriy1337/headscale-ha

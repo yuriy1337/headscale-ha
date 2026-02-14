@@ -279,6 +279,26 @@ class TestIngressRewriting:
             "manifestPath was rewritten with ingress prefix - will cause double-prefix!"
         )
 
+    def test_fetch_interceptor_injected(self):
+        """Verify the fetch interceptor script is injected for __manifest path stripping."""
+        r = direct_get("/login")
+        assert "window.fetch=function" in r.text, (
+            "Fetch interceptor not found in page. "
+            "Client-side navigation will fail without __manifest path stripping."
+        )
+
+    def test_manifest_returns_route_data(self):
+        """Verify __manifest endpoint returns route data for unprefixed paths."""
+        r = direct_get("/__manifest?paths=%2Fusers&version=test")
+        # React Router __manifest returns 200 with JSON or 204 with x-remix-reload-document
+        assert r.status_code in (200, 204), f"__manifest returned {r.status_code}"
+        if r.status_code == 200:
+            body = r.text.strip()
+            assert body != "{}", (
+                "__manifest returned empty {} for /users path. "
+                "Route discovery will fail."
+            )
+
     def test_no_bare_asset_href_src(self):
         """No href/src attributes pointing to /assets/ without the ingress prefix."""
         r = ingress_get("/login")

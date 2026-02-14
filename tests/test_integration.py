@@ -299,6 +299,34 @@ class TestIngressRewriting:
                 "Route discovery will fail."
             )
 
+    def test_manifest_rejects_prefixed_paths(self):
+        """Verify __manifest returns empty/204 for ingress-prefixed paths.
+
+        Problem 19: The server doesn't know about ingress-prefixed paths.
+        The fetch interceptor must strip the prefix before sending to server.
+        This test confirms the server CAN'T handle prefixed paths (so the
+        interceptor is necessary).
+        """
+        import urllib.parse
+        prefixed_path = urllib.parse.quote(f"{INGRESS_PATH}/users")
+        r = direct_get(f"/__manifest?paths={prefixed_path}&version=test")
+        assert r.status_code in (200, 204), f"__manifest returned {r.status_code}"
+        if r.status_code == 200:
+            body = r.text.strip()
+            assert body == "{}" or "routes" not in body, (
+                f"__manifest unexpectedly matched prefixed path {INGRESS_PATH}/users. "
+                "The fetch interceptor may not be needed if this passes."
+            )
+
+    def test_fetch_interceptor_has_correct_prefix(self):
+        """Verify the fetch interceptor uses the correct ingress prefix."""
+        r = direct_get("/login")
+        # The interceptor should have the INGRESS_PATH hardcoded
+        assert f'var p="{INGRESS_PATH}/"' in r.text, (
+            f"Fetch interceptor doesn't contain the correct prefix '{INGRESS_PATH}/'. "
+            "Path stripping will not work."
+        )
+
     def test_no_bare_asset_href_src(self):
         """No href/src attributes pointing to /assets/ without the ingress prefix."""
         r = ingress_get("/login")

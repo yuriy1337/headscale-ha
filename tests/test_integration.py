@@ -409,6 +409,53 @@ class TestAuthenticatedPages:
 
 
 # ============================================================
+# DNS Page Tests
+# ============================================================
+
+
+class TestDnsPage:
+    @pytest.fixture()
+    def session_cookie(self, addon_container):
+        """Login and return the session cookie."""
+        api_key = addon_container["api_key"]
+        r = ingress_post("/login", data={"api_key": api_key})
+        cookie = r.cookies.get("_hp_auth")
+        if not cookie:
+            set_cookie = r.headers.get("Set-Cookie", "")
+            match = re.search(r"_hp_auth=([^;]+)", set_cookie)
+            if match:
+                cookie = match.group(1)
+        assert cookie, "Could not get session cookie"
+        return {"_hp_auth": cookie}
+
+    def test_dns_page_loads(self, session_cookie):
+        """DNS page should load without TypeError (splitDns undefined fix).
+
+        Problem 20: Headplane's DNS page calls Object.keys(splitDns) which
+        throws if splitDns is undefined. Fix: add split: {} to headscale config.
+        """
+        r = ingress_get("/dns", cookies=session_cookie)
+        assert r.status_code == 200, f"DNS page returned {r.status_code}"
+
+    def test_dns_page_has_route_data(self, session_cookie):
+        """Verify __manifest returns route data for /dns path."""
+        r = direct_get("/__manifest?paths=%2Fdns&version=test")
+        assert r.status_code in (200, 204), f"__manifest for /dns returned {r.status_code}"
+
+    def test_headscale_config_has_split_dns(self):
+        """Verify the generated headscale config includes split: {} for DNS."""
+        result = docker(
+            "exec", CONTAINER_NAME,
+            "cat", "/data/headscale/config.yaml",
+            check=False,
+        )
+        assert "split:" in result.stdout, (
+            "Generated headscale config missing 'split:' section. "
+            "DNS page will crash with TypeError."
+        )
+
+
+# ============================================================
 # Direct Access Tests (no ingress)
 # ============================================================
 

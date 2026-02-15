@@ -91,6 +91,9 @@ dns:
   magic_dns: true
   nameservers:
     global:${DNS_NAMESERVERS}
+    split: {}
+  search_domains: []
+  extra_records: []
 
 policy:
   mode: file

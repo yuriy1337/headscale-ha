@@ -415,22 +415,45 @@ class TestAuthenticatedPages:
 
 class TestAutoLogin:
     def test_login_page_has_auto_login_script(self):
-        """Verify the auto-login script is injected with the API key."""
+        """Verify the auto-login script is injected."""
         r = ingress_get("/login")
         assert r.status_code == 200
-        # The auto-login script should contain the sessionStorage flag
         assert "_ha_al" in r.text, (
             "Auto-login script not found in login page. "
             "Users will have to manually enter the API key."
         )
 
-    def test_login_page_has_api_key_in_script(self, addon_container):
-        """Verify the injected script contains the actual API key."""
+    def test_api_key_not_in_html(self, addon_container):
+        """Verify the API key is NOT embedded in page HTML (security)."""
         r = ingress_get("/login")
         api_key = addon_container["api_key"]
-        assert api_key in r.text, (
-            "API key not found in auto-login script. "
-            "The %%API_KEY%% placeholder may not have been replaced."
+        assert api_key not in r.text, (
+            "API key found in page HTML! It should only be served from "
+            "the /_ha_key endpoint, not embedded in every page."
+        )
+
+    def test_ha_key_endpoint_serves_api_key(self, addon_container):
+        """Verify the /_ha_key endpoint serves the API key."""
+        r = direct_get("/_ha_key")
+        assert r.status_code == 200, f"/_ha_key returned {r.status_code}"
+        api_key = addon_container["api_key"]
+        assert r.text.strip() == api_key, (
+            f"/_ha_key returned wrong key. Expected: {api_key[:20]}..."
+        )
+
+    def test_ha_key_endpoint_no_cache(self):
+        """Verify the /_ha_key endpoint sets no-cache headers."""
+        r = direct_get("/_ha_key")
+        cache_control = r.headers.get("Cache-Control", "")
+        assert "no-store" in cache_control, (
+            f"/_ha_key should have Cache-Control: no-store. Got: {cache_control}"
+        )
+
+    def test_auto_login_fetches_key(self):
+        """Verify auto-login script fetches key from /_ha_key endpoint."""
+        r = ingress_get("/login")
+        assert "_ha_key" in r.text, (
+            "Auto-login script should fetch API key from /_ha_key endpoint."
         )
 
     def test_auto_login_skipped_when_authenticated(self):
@@ -444,31 +467,15 @@ class TestAutoLogin:
         """Verify form has explicit action to avoid React Router interception."""
         r = ingress_get("/login")
         assert "f.action=window.location.pathname" in r.text, (
-            "Auto-login form missing explicit action attribute. "
-            "React Router may intercept the submission."
+            "Auto-login form missing explicit action attribute."
         )
 
     def test_auto_login_appends_to_document_element(self):
         """Verify form appends to documentElement (outside React root)."""
         r = ingress_get("/login")
         assert "document.documentElement.appendChild" in r.text, (
-            "Auto-login form should append to documentElement, not body, "
-            "to avoid React Router interception."
+            "Auto-login form should append to documentElement, not body."
         )
-
-    def test_auto_login_runs_synchronously(self):
-        """Verify auto-login runs in head (no DOMContentLoaded wrapper)."""
-        r = ingress_get("/login")
-        # The script should NOT use DOMContentLoaded - it must run before React hydrates
-        # Extract the auto-login IIFE (second one after fetch interceptor)
-        auto_login_start = r.text.find('"_ha_al"')
-        if auto_login_start != -1:
-            # Check within a reasonable window around the auto-login script
-            snippet = r.text[max(0, auto_login_start - 500):auto_login_start + 500]
-            assert "DOMContentLoaded" not in snippet, (
-                "Auto-login script uses DOMContentLoaded which causes race "
-                "condition with React Router hydration."
-            )
 
 
 # ============================================================

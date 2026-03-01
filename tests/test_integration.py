@@ -409,6 +409,41 @@ class TestAuthenticatedPages:
 
 
 # ============================================================
+# Auto-Login Tests
+# ============================================================
+
+
+class TestAutoLogin:
+    def test_login_page_has_auto_login_script(self):
+        """Verify the auto-login script is injected with the API key."""
+        r = ingress_get("/login")
+        assert r.status_code == 200
+        # The auto-login script should contain the API key placeholder replaced with real key
+        assert "_ha_al" in r.text, (
+            "Auto-login script not found in login page. "
+            "Users will have to manually enter the API key."
+        )
+
+    def test_login_page_has_api_key_in_script(self, addon_container):
+        """Verify the injected script contains the actual API key."""
+        r = ingress_get("/login")
+        api_key = addon_container["api_key"]
+        # The API key should be embedded in the auto-login script
+        assert api_key in r.text, (
+            "API key not found in auto-login script. "
+            "The %%API_KEY%% placeholder may not have been replaced."
+        )
+
+    def test_auto_login_skipped_when_authenticated(self, addon_container):
+        """Verify auto-login script checks for existing session cookie."""
+        r = ingress_get("/login")
+        # Script should check for _hp_auth cookie
+        assert "_hp_auth" in r.text, (
+            "Auto-login script doesn't check for existing session cookie."
+        )
+
+
+# ============================================================
 # DNS Page Tests
 # ============================================================
 

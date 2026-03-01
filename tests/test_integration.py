@@ -418,7 +418,7 @@ class TestAutoLogin:
         """Verify the auto-login script is injected with the API key."""
         r = ingress_get("/login")
         assert r.status_code == 200
-        # The auto-login script should contain the API key placeholder replaced with real key
+        # The auto-login script should contain the sessionStorage flag
         assert "_ha_al" in r.text, (
             "Auto-login script not found in login page. "
             "Users will have to manually enter the API key."
@@ -428,19 +428,47 @@ class TestAutoLogin:
         """Verify the injected script contains the actual API key."""
         r = ingress_get("/login")
         api_key = addon_container["api_key"]
-        # The API key should be embedded in the auto-login script
         assert api_key in r.text, (
             "API key not found in auto-login script. "
             "The %%API_KEY%% placeholder may not have been replaced."
         )
 
-    def test_auto_login_skipped_when_authenticated(self, addon_container):
+    def test_auto_login_skipped_when_authenticated(self):
         """Verify auto-login script checks for existing session cookie."""
         r = ingress_get("/login")
-        # Script should check for _hp_auth cookie
         assert "_hp_auth" in r.text, (
             "Auto-login script doesn't check for existing session cookie."
         )
+
+    def test_auto_login_has_explicit_action(self):
+        """Verify form has explicit action to avoid React Router interception."""
+        r = ingress_get("/login")
+        assert "f.action=window.location.pathname" in r.text, (
+            "Auto-login form missing explicit action attribute. "
+            "React Router may intercept the submission."
+        )
+
+    def test_auto_login_appends_to_document_element(self):
+        """Verify form appends to documentElement (outside React root)."""
+        r = ingress_get("/login")
+        assert "document.documentElement.appendChild" in r.text, (
+            "Auto-login form should append to documentElement, not body, "
+            "to avoid React Router interception."
+        )
+
+    def test_auto_login_runs_synchronously(self):
+        """Verify auto-login runs in head (no DOMContentLoaded wrapper)."""
+        r = ingress_get("/login")
+        # The script should NOT use DOMContentLoaded - it must run before React hydrates
+        # Extract the auto-login IIFE (second one after fetch interceptor)
+        auto_login_start = r.text.find('"_ha_al"')
+        if auto_login_start != -1:
+            # Check within a reasonable window around the auto-login script
+            snippet = r.text[max(0, auto_login_start - 500):auto_login_start + 500]
+            assert "DOMContentLoaded" not in snippet, (
+                "Auto-login script uses DOMContentLoaded which causes race "
+                "condition with React Router hydration."
+            )
 
 
 # ============================================================

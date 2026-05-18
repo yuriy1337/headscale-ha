@@ -207,7 +207,7 @@ server:
   port: 3001
   base_url: "${HEADPLANE_BASE_URL}"
   cookie_secret: "${COOKIE_SECRET}"
-  cookie_secure: true
+  cookie_secure: false
   cookie_max_age: 86400
   data_path: /var/lib/headplane
 

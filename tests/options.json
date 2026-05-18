@@ -4,7 +4,7 @@
   "dns_base_domain": "test.local",
   "dns_nameservers": ["1.1.1.1"],
   "log_level": "info",
-  "issuer": "https://accounts.google.com",
-  "client_id": "OIDC_ClientID",
-  "client_secret": "OIDC_ClientSecret"
+  "issuer": "",
+  "client_id": "",
+  "client_secret": ""
 }

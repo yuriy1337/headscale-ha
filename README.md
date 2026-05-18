@@ -41,6 +41,9 @@ Click the button above, or manually:
 | `dns_base_domain` | Tailnet domain (default: `tailnet.local`) |
 | `dns_nameservers` | DNS servers for the tailnet |
 | `log_level` | Log verbosity: `trace`, `debug`, `info`, `warn`, `error` |
+| `OIDC Issuer` | OIDC Provider (e.g., `https://accounts.google.com`) |
+| `OIDC Client ID` | OIDC Client ID |
+| `OIDC Client Secret` | OIDC Client Secret |
 
 ## Supported Architectures
 

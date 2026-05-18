@@ -231,6 +231,7 @@ oidc:
   client_id: "${CLIENT_ID}"
   client_secret: "${CLIENT_SECRET}"
   headscale_api_key: "${HEADPLANE_API_KEY:-HEADSCALE_API_KEY_PLACEHOLDER}"
+  token_endpoint_auth_method: "client_secret_post"
 EOF
 fi
 

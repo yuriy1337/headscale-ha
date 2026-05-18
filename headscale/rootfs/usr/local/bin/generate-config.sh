@@ -203,7 +203,7 @@ fi
 mkdir -p /etc/headplane
 cat > /etc/headplane/config.yaml << EOF
 server:
-  host: "127.0.0.1"
+  host: "0.0.0.0"
   port: 3001
   base_url: "${HEADPLANE_BASE_URL}"
   cookie_secret: "${COOKIE_SECRET}"

@@ -188,13 +188,21 @@ if [ -f "${API_KEY_FILE}" ]; then
     HEADPLANE_API_KEY=$(cat "${API_KEY_FILE}")
 fi
 
-# Write Headplane config to the default location it expects
+# Get the external Headplane URL (if provided)
+HEADPLANE_URL=$(_config 'headplane_url')
+HEADPLANE_BASE_URL="http://localhost:3001"
+
+if [ -n "${HEADPLANE_URL}" ] && [ "${HEADPLANE_URL}" != "null" ]; then
+    HEADPLANE_BASE_URL="${HEADPLANE_URL}"
+fi
+
+# Write Headplane config base
 mkdir -p /etc/headplane
 cat > /etc/headplane/config.yaml << EOF
 server:
   host: "127.0.0.1"
   port: 3001
-  base_url: "http://localhost:3001"
+  base_url: "${HEADPLANE_BASE_URL}"
   cookie_secret: "${COOKIE_SECRET}"
   cookie_secure: false
   cookie_max_age: 86400
@@ -204,11 +212,23 @@ headscale:
   url: "http://127.0.0.1:${HEADSCALE_PORT}"
   config_path: /data/headscale/config.yaml
   config_strict: false
+  api_key_path: /data/headscale/api_key
 
 integration:
   proc:
     enabled: true
 EOF
+
+# Inject OIDC into Headplane if configured
+if [ -n "${ISSUER}" ] && [ "${ISSUER}" != "null" ]; then
+cat >> /etc/headplane/config.yaml << EOF
+
+oidc:
+  issuer: "${ISSUER}"
+  client_id: "${CLIENT_ID}"
+  client_secret: "${CLIENT_SECRET}"
+EOF
+fi
 
 _log_info "Headplane config written to /etc/headplane/config.yaml"
 

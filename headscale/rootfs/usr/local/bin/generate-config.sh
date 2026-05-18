@@ -47,6 +47,7 @@ LOG_LEVEL=$(_config 'log_level')
 ISSUER=$(_config 'issuer')
 CLIENT_ID=$(_config 'client_id')
 CLIENT_SECRET=$(_config 'client_secret')
+HEADPLANE_URL=$(_config 'headplane_url')
 
 # Validate required options
 if [ -z "${SERVER_URL}" ]; then
@@ -126,8 +127,6 @@ derp:
 EOF
 
 _log_info "Headscale config written to /data/headscale/config.yaml"
-_log_info "Generated config:"
-cat /data/headscale/config.yaml
 
 # Create default ACL policy if it doesn't exist
 if [ ! -f /data/headscale/acl.json ]; then
@@ -166,6 +165,13 @@ API_KEY=$(/usr/local/bin/headscale --config /data/headscale/config.yaml apikeys 
 if [ $? -eq 0 ]; then
     echo "${API_KEY}" > /data/headscale/api_key
     echo "[INFO] API key generated and stored"
+    
+    # Swap the placeholder in Headplane config with the newly generated real key!
+    if grep -q "HEADSCALE_API_KEY_PLACEHOLDER" /etc/headplane/config.yaml; then
+        sed -i "s|HEADSCALE_API_KEY_PLACEHOLDER|${API_KEY}|g" /etc/headplane/config.yaml
+        s6-svc -t /run/service/headplane || pkill -f node || true
+        echo "[INFO] Headplane restarted with new API key"
+    fi
 else
     echo "[ERROR] Failed to generate API key: ${API_KEY}"
 fi
@@ -188,15 +194,12 @@ if [ -f "${API_KEY_FILE}" ]; then
     HEADPLANE_API_KEY=$(cat "${API_KEY_FILE}")
 fi
 
-# Get the external Headplane URL (if provided)
-HEADPLANE_URL=$(_config 'headplane_url')
 HEADPLANE_BASE_URL="http://localhost:3001"
-
 if [ -n "${HEADPLANE_URL}" ] && [ "${HEADPLANE_URL}" != "null" ]; then
     HEADPLANE_BASE_URL="${HEADPLANE_URL}"
 fi
 
-# Write Headplane config base
+# Write Headplane config to the default location it expects
 mkdir -p /etc/headplane
 cat > /etc/headplane/config.yaml << EOF
 server:
@@ -227,6 +230,7 @@ oidc:
   issuer: "${ISSUER}"
   client_id: "${CLIENT_ID}"
   client_secret: "${CLIENT_SECRET}"
+  headscale_api_key: "${HEADPLANE_API_KEY:-HEADSCALE_API_KEY_PLACEHOLDER}"
 EOF
 fi
 

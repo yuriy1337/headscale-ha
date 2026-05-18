@@ -99,6 +99,11 @@ policy:
   mode: file
   path: /data/headscale/acl.json
 
+oidc:
+  issuer: "${ISSUER}"
+  client_id: "${CLIENT_ID}"
+  client_secret: "${CLIENT_SECRET}"
+
 derp:
   server:
     enabled: false

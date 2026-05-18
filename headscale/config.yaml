@@ -1,6 +1,6 @@
 ---
 name: Headscale
-version: 0.1.29
+version: 0.1.30
 slug: headscale
 description: Self-hosted Tailscale control server with Headplane web UI
 url: https://github.com/SaigeDevvy/headscale-ha
@@ -15,8 +15,10 @@ panel_title: Headscale
 panel_icon: mdi:vpn
 ports:
   8080/tcp: 8080
+  3001/tcp: 3001
 ports_description:
   8080/tcp: "Headscale server - point your reverse proxy here"
+  3001/tcp: "Headplane Web UI - point Cloudflared here"
 map:
   - addon_config:rw
 options:

@@ -27,6 +27,7 @@ options:
     - "1.1.1.1"
     - "8.8.8.8"
   log_level: info
+  headplane_url: ""
   issuer: ""
   client_id: ""
   client_secret: ""
@@ -37,9 +38,10 @@ schema:
   dns_nameservers:
     - str
   log_level: list(trace|debug|info|warn|error)
+  headplane_url: url?
   issuer: url?
   client_id: str?
-  client_secret: str?
+  client_secret: password?
 startup: services
 
 

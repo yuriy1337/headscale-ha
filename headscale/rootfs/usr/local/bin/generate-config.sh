@@ -65,7 +65,7 @@ for server in $(_config_array 'dns_nameservers'); do
       - \"${server}\""
 done
 
-# Generate headscale config
+# Generate BASE headscale config
 cat > /data/headscale/config.yaml << EOF
 server_url: "${SERVER_URL}"
 listen_addr: "0.0.0.0:${HEADSCALE_PORT}"
@@ -101,11 +101,20 @@ dns:
 policy:
   mode: file
   path: /data/headscale/acl.json
+EOF
+
+if [ -n "${ISSUER}" ] && [ "${ISSUER}" != "null" ]; then
+cat >> /data/headscale/config.yaml << EOF
 
 oidc:
+  only_start_if_oidc_is_available: true
   issuer: "${ISSUER}"
   client_id: "${CLIENT_ID}"
   client_secret: "${CLIENT_SECRET}"
+EOF
+fi
+
+cat >> /data/headscale/config.yaml << EOF
 
 derp:
   server:

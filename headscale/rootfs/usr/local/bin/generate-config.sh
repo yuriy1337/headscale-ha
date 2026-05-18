@@ -44,6 +44,9 @@ SERVER_URL=$(_config 'server_url')
 HEADSCALE_PORT=$(_config 'headscale_port')
 DNS_BASE_DOMAIN=$(_config 'dns_base_domain')
 LOG_LEVEL=$(_config 'log_level')
+ISSUER=$(_config 'issuer')
+CLIENT_ID=$(_config 'client_id')
+CLIENT_SECRET=$(_config 'client_secret')
 
 # Validate required options
 if [ -z "${SERVER_URL}" ]; then

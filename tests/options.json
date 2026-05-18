@@ -4,6 +4,7 @@
   "dns_base_domain": "test.local",
   "dns_nameservers": ["1.1.1.1"],
   "log_level": "info",
+  "headplane_url": "",
   "issuer": "",
   "client_id": "",
   "client_secret": ""

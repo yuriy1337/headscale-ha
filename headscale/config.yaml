@@ -27,9 +27,9 @@ options:
     - "1.1.1.1"
     - "8.8.8.8"
   log_level: info
-  issuer: "https://auth.example.com"
-  client_id: "ExampleID"
-  client_secret: "VerySecret"
+  issuer: ""
+  client_id: ""
+  client_secret: ""
 schema:
   server_url: url
   headscale_port: port
@@ -37,9 +37,9 @@ schema:
   dns_nameservers:
     - str
   log_level: list(trace|debug|info|warn|error)
-  issuer: url
-  client_id: str
-  client_secret: str
+  issuer: url?
+  client_id: str?
+  client_secret: str?
 startup: services
 
 
